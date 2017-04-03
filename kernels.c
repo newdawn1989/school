@@ -168,6 +168,7 @@ typedef struct {
 static void initialize_pixel_sum(pixel_sum *sum){
     sum->red = sum->green = sum->blue = 0;
     sum->num = 0;
+    
 }
 
 static void accumulate_sum(pixel_sum *sum, pixel p){
@@ -175,8 +176,28 @@ static void accumulate_sum(pixel_sum *sum, pixel p){
     sum->green += (int) p.green;
     sum->blue += (int) p.blue;
     sum->num++;
+    
 }
-
+static void assign_sum_to_pixel(pixel *current_pixel, pixel_sum sum) 
+{
+    current_pixel->red = (unsigned short) (sum.red/sum.num);
+    current_pixel->green = (unsigned short) (sum.green/sum.num);
+    current_pixel->blue = (unsigned short) (sum.blue/sum.num);
+    return;
+}
+static pixel avg(int dim, int i, int j, pixel *src) 
+{
+    int ii, jj;
+    pixel_sum sum;
+    pixel current_pixel;
+  
+    initialize_pixel_sum(&sum);
+    for(ii = max(i-1, 0); ii <= min(i+1, dim-1); ii++) 
+	    for(jj = max(j-1, 0); jj <= min(j+1, dim-1); jj++) 
+	    accumulate_sum(&sum, src[RIDX(ii, jj, dim)]);
+    assign_sum_to_pixel(&current_pixel, sum);
+    return current_pixel;
+}
  /* naive_smooth - The naive baseline version of smooth */
 
 char naive_smooth_descr[] = "naive_smooth: Naive baseline implementation";
@@ -197,9 +218,15 @@ void naive_smooth(int dim, pixel *src, pixel *dst)
             dst[RIDX(i,j,dim)].green = ps.green/ps.num;
             dst[RIDX(i,j,dim)].blue  = ps.blue/ps.num;
             
+    //printf("num value for the inner most loop: %d\n", ps.num);  
         }
+    //printf("num value for the mid i loop: %d\n", ps.num); 
     }
+    //printf("num value for the outter j loop: %d\n", ps.num);
+
+
 }
+
 /******************************************************
  * Your different versions of the smooth kernel go here
  ******************************************************/
@@ -207,39 +234,102 @@ void naive_smooth(int dim, pixel *src, pixel *dst)
 char attempt_1_smooth_descr[] = "ATTEMPT 1";
 void attempt_1_smooth(int dim, pixel *src, pixel *dst) 
 {
+    int i, j;
     
-//upper left, all these will be >> 2 (divided by 4)
-//taking the average of the 4x4 square of pixels d[0] is upper left of the image
-  dst[0].red = (src[0].red + src[1].red + src[dim].red + src[dim+1].red) >> 2;
-  dst[0].green = (src[0].green + src[1].green + src[dim].green + src[dim+1].green) >> 2;
-  dst[0].blue = (src[0].blue + src[1].blue + src[dim].blue + src[dim+1].blue) >> 2;
-
-
-//upper right
-  dst[dim-1].red = (src[dim-1].red + src[dim-2].red+src[dim * 2-1].red + src[dim * 2-2].red) >> 2;
-  dst[dim-1].green = (src[dim-1].green + src[dim-2].green + src[dim * 2-1].green + src[dim * 2-2].green) >> 2;
-  dst[dim-1].blue = (src[dim-1].blue + src[dim-2].blue + src[dim * 2-1].blue + src[dim * 2-2].blue) >> 2;
-
-//lower left
-  dst[dim*(dim-1)].red = (src[dim * (dim-1)].red + src[dim * (dim-1)+1].red + src[dim * (dim-2)].red +src[dim * (dim-2)+1].red) >> 2;
-  dst[dim*(dim-1)].green = (src[dim * (dim-1)].green + src[dim * (dim-1)+1].green + src[dim * (dim-2)].green + src[dim * (dim-2)+1].green) >> 2;
-  dst[dim*(dim-1)].blue = (src[dim * (dim-1)].blue + src[dim*(dim-1)+1].blue + src[dim * (dim-2)].blue + src[dim * (dim-2)+1].blue) >> 2;
-
-//lower right
-  dst[dim * dim-1].red = (src[dim * dim-1].red + src[dim * dim-2].red + src[dim * (dim-1)].red +src[dim * (dim-1)-2].red) >> 2;
-  dst[dim * dim-1].green = (src[dim * dim-1].green + src[dim * dim-2].green + src[dim * (dim-1)].green + src[dim * (dim-1)-2].green) >> 2;
-  dst[dim * dim-1].blue = (src[dim * dim-1].blue + src[dim*dim-2].blue + src[dim * (dim-1)].blue + src[dim * (dim-1)-2].blue) >> 2;
-
+    for (i = 0; i < dim; i++)
+      for (j = 0; j < dim; j++)
+        dst[RIDX(i, j, dim)] = avg(dim, i, j, src);
+        
 }
+char attempt_2_smooth_descr[] = "ATTEMPT 1";
+void attempt_2_smooth(int dim, pixel *src, pixel *dst) 
+{
+  int i, j, tmp, tmp_i;
+  //upper left
+  dst[0].red = (src[0].red + src[1].red + src[dim].red + src[dim+1].red)>>2;
+  dst[0].blue = (src[0].blue + src[1].blue + src[dim].blue + src[dim+1].blue)>>2;
+  dst[0].green = (src[0].green + src[1].green + src[dim].green + src[dim+1].green)>>2;
+  
+  //upper right
+  dst[dim-1].red = (src[dim-1].red + src[dim-2].red + src[dim *2 - 1].red + src[dim * 2-2].red)>>2;
+  dst[dim-1].blue = (src[dim-1].blue + src[dim-2].blue + src[dim *2 - 1].blue + src[dim * 2-2].blue)>>2;
+  dst[dim-1].green = (src[dim-1].green + src[dim-2].green + src[dim *2 - 1].green + src[dim * 2-2].green)>>2;
+
+  //lower left
+  dst[dim *(dim-1)].red = (src[dim*(dim-1)].red+ src[dim*(dim-1)+1].red+ src[dim*(dim-2)].red+ src[dim *(dim-2)+1].red)>>2;
+  dst[dim *(dim-1)].blue = (src[dim*(dim-1)].blue+ src[dim*(dim-1)+1].blue+ src[dim*(dim-2)].blue+ src[dim *(dim-2)+1].blue)>>2;
+  dst[dim *(dim-1)].green = (src[dim*(dim-1)].green+ src[dim*(dim-1)+1].green+ src[dim*(dim-2)].green+ src[dim *(dim-2)+1].green)>>2;
+  
+
+  //lower right
+  dst[dim *dim-1].red = (src[dim*dim-1].red+src[dim*dim-2].red+ src[dim*(dim-1)-1].red+ src[dim*(dim -1)-2].red)>>2;
+  dst[dim *dim-1].blue = (src[dim*dim-1].blue+src[dim*dim-2].blue+ src[dim*(dim-1)-1].blue+ src[dim*(dim -1)-2].blue)>>2;
+  dst[dim *dim-1].green = (src[dim*dim-1].green+src[dim*dim-2].green+ src[dim*(dim-1)-1].green+ src[dim*(dim -1)-2].green)>>2;
+   
+  //upper edge, divide by 6
+     for (j = 1; j < dim - 1; j++) 
+    {
+        dst[j].red = (src[j].red + src[j - 1].red + src[j + 1].red + 
+                      src[j + dim].red + src[j + 1 + dim].red + src[j - 1 + dim].red) / 6;
+        dst[j].blue = (src[j].blue + src[j - 1].blue + src[j + 1].blue + 
+                       src[j + dim].blue + src[j + 1 + dim].blue + src[j - 1 + dim].blue) / 6;
+        dst[j].green = (src[j].green + src[j - 1].green + src[j + 1].green + 
+                        src[j + dim].green + src[j + 1 + dim].green + src[j - 1 + dim].green) / 6;
+    }
+
+  //lower edge
+    for(j = dim *(dim-1)+1; j<dim*dim-1; j++) 
+    {
+        dst[j].red = (src[j].red + src[j-1].red + src[j + 1].red + src[j - dim].red + src[j + 1 - dim].red + src[j - 1 - dim].red) / 6;
+        dst[j].blue = (src[j].blue + src[j - 1].blue + src[j + 1].blue + src[j - dim].blue + src[j + 1 - dim].blue + src[j - 1 - dim].blue) / 6;
+        dst[j].green = (src[j].green + src[j - 1].green + src[j + 1].green + src[j - dim].green + src[j + 1 - dim].green + src[j - 1 - dim].green) / 6;
+    } 
+
+    //left edge
+    for (j = dim; j<dim* (dim - 1); j += dim) 
+    {
+        dst[j].red = (src[j].red + src[j-dim].red+src[j+1].red+src[j+dim].red + src[j+1 + dim].red + src[j - dim + 1].red) / 6;
+        dst[j].blue = (src[j].blue + src[j - dim].blue + src[j + 1].blue + src[j + dim].blue + src[j + 1 + dim].blue + src[j - dim + 1].blue) / 6;
+        dst[j].green = (src[j].green + src[j - dim].green + src[j + 1].green + src[j + dim].green + src[j + 1 + dim].green + src[j - dim + 1].green) / 6;
+    }
+
+    //right edge
+    for (j = dim+dim-1; j<dim*dim-1; j+=dim){
+        dst[j].red = (src[j].red+src[j-1].red+src[j-dim].red+src[j+dim].red+src[j-dim-1].red+src[j-1+dim].red)/6;
+        dst[j].blue = (src[j].blue+src[j-1].blue+src[j-dim].blue+src[j+dim].blue+src[j-dim-1].blue+src[j-1+dim].blue)/6;
+        dst[j].green = (src[j].green+src[j-1].green+src[j-dim].green+src[j+dim].green+src[j-dim-1].green+src[j-1+dim].green)/6;
+    }
+    //center
+
+    tmp_i = dim;
+    for(i = 1; i<dim-1; i++){
+        for(j = 1; j<dim-1; j++){
+          tmp = tmp_i+j;
+          dst[tmp].red = (src[tmp].red + src[tmp-1].red + src[tmp+1].red+src[tmp-dim].red+src[tmp-dim-1].red+ 
+                            src[tmp-dim+1].red+src[tmp+dim].red+src[tmp+dim+1].red+src[tmp+dim-1].red)/9;
+
+          dst[tmp].blue = (src[tmp].blue+src[tmp-1].blue+src[tmp+1].blue+src[tmp-dim].blue + src[tmp-dim-1].blue+
+                          src[tmp-dim+1].blue+src[tmp+dim].blue+src[tmp+dim+1].blue+src[tmp+dim-1].blue)/9;
+
+          dst[tmp].green = (src[tmp].green+src[tmp-1].green+src[tmp+1].green+src[tmp-dim].green +src[tmp+dim].green+
+                          src[tmp-dim+1].green+src[tmp-dim-1].green+src[tmp+dim+1].green+src[tmp+dim-1].green)/9;
+        }
+      tmp_i+=dim;
+    }
+        
+}
+
 /******************************************************
  * NOTES!!!!!
 1) look at helper functions, see if we can optimize them
    - max and min (optimized into single return statement
    - initlaize pixels, set RGB equal to each other and the last = 0, saves on deceleration
-2) start unrolling the loops
+   - added a function to average the pixels rather then doing so in the loop
+2) start unrolling the loops (MOVED FROM THE INSIDE OF NAIVE FUNCTION)
 can perform loop tiling/loop strip mining of the loops, by dividing the matrix/image in 
 square tiles and smoothing one tile at a time. This way we achieve better cache utilization.
-  -this involves taking the average of all 4, 6 and 9 pixels in our unrolling process. and insted of dividing by 4, we can get further optimization by >>
+  -this involves taking the average of all 4 (ps.num for the outter loop), 6(ps.num for the mid loop) and 9(ps.num for inner most loop)
+     pixels in our unrolling process. and insted of dividing by 4, we can get further optimization by >>
   - to further optimize, we can break the image into 9 quadrents:
         i)upper right X
         ii) upper left X
@@ -260,6 +350,7 @@ void smooth(int dim, pixel *src, pixel *dst)
 {
     naive_smooth(dim, src, dst);
     attempt_1_smooth(dim, src, dst);
+    attempt_2_smooth(dim, src, dst);
 }
 
 
@@ -275,6 +366,7 @@ void register_smooth_functions() {
     add_smooth_function(&smooth, smooth_descr);
     add_smooth_function(&naive_smooth, naive_smooth_descr);
     add_smooth_function(&attempt_1_smooth, attempt_1_smooth_descr);
+    add_smooth_function(&attempt_2_smooth, attempt_2_smooth_descr);
     /* ... Register additional test functions here */
 }
 
