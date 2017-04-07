@@ -94,6 +94,10 @@ void attempt_2_rotate(int dim, pixel *src, pixel *dst)
 /*
 NOTES:
 we do the work of the inner for loop in an external function and call in the loop. Function calls are faster then iteration work
+dst = dim^2-dim+dst
+*dst = *src
+src = src+dim
+*(dst+1) = (*src)
 */
 char attempt_3_rotate_descr[] = "Attempt 3===========using pointers for src and dst";
 void attempt_3_rotate(int dim, pixel *src, pixel *dst) 
@@ -101,8 +105,9 @@ void attempt_3_rotate(int dim, pixel *src, pixel *dst)
    int i, j, dim_local;
    pixel *src_ptr, *dst_ptr;
    dim_local = dim;
+  
     for (i = 0; i < dim_local; i += 32){ 
-        for (j = dim_local-1; j >=0; j--) {
+        for (j = 0; j <dim; j++) {
         dst_ptr = dst+RIDX(dim-1-j, i, dim_local);
         src_ptr = src+RIDX(i,j, dim_local);  
         *(dst_ptr) = *(src_ptr);
@@ -178,10 +183,8 @@ swaped i and j to get a slight bump in speed
 let inner loop decriment rather then incriment for slight increase in speed
 TRY LOCAL DIM VARIABLE
 */
-/*
-LOOP BLOCKING:
 
-*/
+/*
 char attempt_4_rotate_descr[] = "Attempt 4===========loop blocking and loop unrolling using pointers to src and dst";
 void attempt_4_rotate(int dim, pixel *src, pixel *dst) 
 {
@@ -190,7 +193,7 @@ void attempt_4_rotate(int dim, pixel *src, pixel *dst)
   int block_2 = 8;
   int i,j,i1,j1, dim_local;
 pixel *src_ptr, *dst_ptr;
-  dim_local = dim;
+  dim_local = dim_squared_ish;
   for(i1 = 0; i1 < dim_local; i1 += block_1) {
     for(j1 = 0; j1< dim_local; j1 += block_2) {
             for(i = i1; i < i1 + block_1; i+=8){
@@ -261,18 +264,166 @@ pixel *src_ptr, *dst_ptr;
                             *(dst_ptr+30) = *(src_ptr);
                             src_ptr+=dim_local;
                             *(dst_ptr+31) = *(src_ptr);
-                            */
+                            
                 }
             }
         }
     }
 
 }
+*/
 /*
 NOTES:
 You should think of I[RIDX(i,j,n)] as equivalent to I[i][j].
 Accessing the array in A[i][j] order, taking advantage of spatial locality why so slow?
 */
+char attempt_5_rotate_descr[] = "Attempt 5===========using pointers for src and dst, loop unrolling on i and some  other tweeking";
+void attempt_5_rotate(int dim, pixel *src, pixel *dst) 
+{
+   int i, j, dim_local, dim_squared_ish;
+  dim_local = dim;
+  dim_squared_ish = (dim-1)*dim;
+  dst+=dim_squared_ish;
+    for (i = 0; i < dim_local; i += 32){ 
+        for (j = 0; j <dim; j++) { 
+//1        
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//2
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//3
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//4
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//5  
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//6
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//7
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//8
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//9
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//10
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//11
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//12
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//13
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//14
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//15
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//16
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//17
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//18
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//19
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//20
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//21
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//22
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//23
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//24
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//25
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//26
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//27
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//28
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//29
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//30
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+//31
+        *dst = *src;
+        src+=dim_local;
+        dst+=1;
+
+//32
+        *dst = *src;
+
+        src++;
+        src -= (dim<<5)-dim;
+        dst-=31+dim;
+                }
+            dst+=dim_squared_ish +dim;
+            dst+=32;
+            src += 31*dim;
+        
+   }
+}
 char playGround_rotate_descr[] = "PLAYGROUND======optimize array index cacheing";
 void playGround_rotate(int dim, pixel *src, pixel *dst) 
 {	
@@ -333,11 +484,12 @@ not 100% sure why this works so damn well, ask CA's
 char rotate_descr[] = "rotate: Current working version";
 void rotate(int dim, pixel *src, pixel *dst) 
 {
-    //playGround_rotate(dim, src, dst);
+    playGround_rotate(dim, src, dst);
     attempt_1_rotate(dim, src, dst);
-    //attempt_2_rotate(dim, src, dst);
+    attempt_2_rotate(dim, src, dst);
     attempt_3_rotate(dim, src, dst);
-    attempt_4_rotate(dim, src, dst);
+    //attempt_4_rotate(dim, src, dst);
+    attempt_5_rotate(dim, src, dst);
 }
 
 /*********************************************************************
@@ -353,10 +505,11 @@ void register_rotate_functions()
     add_rotate_function(&naive_rotate, naive_rotate_descr);   
     add_rotate_function(&rotate, rotate_descr);   
     add_rotate_function(&attempt_1_rotate, attempt_1_rotate_descr);
-    //add_rotate_function(&attempt_2_rotate, attempt_2_rotate_descr);
+    add_rotate_function(&attempt_2_rotate, attempt_2_rotate_descr);
     add_rotate_function(&attempt_3_rotate, attempt_3_rotate_descr);
-    add_rotate_function(&attempt_4_rotate, attempt_4_rotate_descr);
-    //add_rotate_function(&playGround_rotate, playGround_rotate_descr);
+    //add_rotate_function(&attempt_4_rotate, attempt_4_rotate_descr);
+    add_rotate_function(&attempt_5_rotate, attempt_5_rotate_descr);
+    add_rotate_function(&playGround_rotate, playGround_rotate_descr);
     
     
      
@@ -570,8 +723,8 @@ square tiles and smoothing one tile at a time. This way we achieve better cache 
 char smooth_descr[] = "smooth: Current working version";
 void smooth(int dim, pixel *src, pixel *dst) 
 {
-    //naive_smooth(dim, src, dst);
-    //attempt_1_smooth(dim, src, dst);
+    naive_smooth(dim, src, dst);
+    attempt_1_smooth(dim, src, dst);
     attempt_2_smooth(dim, src, dst);
 }
 
@@ -585,9 +738,9 @@ void smooth(int dim, pixel *src, pixel *dst)
  *********************************************************************/
 
 void register_smooth_functions() {
-    //add_smooth_function(&smooth, smooth_descr);
+    add_smooth_function(&smooth, smooth_descr);
     add_smooth_function(&naive_smooth, naive_smooth_descr);
-    //add_smooth_function(&attempt_1_smooth, attempt_1_smooth_descr);
+    add_smooth_function(&attempt_1_smooth, attempt_1_smooth_descr);
     add_smooth_function(&attempt_2_smooth, attempt_2_smooth_descr);
     /* ... Register additional test functions here */
 }
